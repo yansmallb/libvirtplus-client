@@ -196,14 +196,18 @@ func (client *LibvirtplusClient) CreateContainer(ccf *dockerclient.ContainerConf
 		Bridge:          ccf.HostConfig.NetworkMode,
 		Disk_source:     "",
 		Cdrom_source:    "",
-		Boot:            ccf.Cmd[0],
+		Boot:            ccf.Env[0],
 		ContainerConfig: ccf,
 	}
-	if ccf.Cmd[0] == "hd" {
+	if ccf.Env[0] == "hd" {
 		config.Disk_source = ccf.Image
-	} else if ccf.Cmd[0] == "cdrom" {
+	} else if ccf.Env[0] == "cdrom" {
 		config.Cdrom_source = ccf.Image
 	}
+	if config.Vcpu == 0 && ccf.HostConfig.CpuShares != 0 {
+		config.Vcpu = ccf.HostConfig.CpuShares
+	}
+
 	data, err := json.Marshal(config)
 	if err != nil {
 		return "", err
@@ -212,18 +216,19 @@ func (client *LibvirtplusClient) CreateContainer(ccf *dockerclient.ContainerConf
 	if name != "" {
 		v := url.Values{}
 		v.Set("name", name)
+		config.Name = name
 		uri = fmt.Sprintf("%s?%s", uri, v.Encode())
 	}
 	data, err = client.doRequest("POST", uri, data, nil)
 	if err != nil {
 		return "", err
 	}
-	id := ""
-	err = json.Unmarshal(data, id)
+	result := &RespContainersCreate{}
+	err = json.Unmarshal(data, result)
 	if err != nil {
 		return "", err
 	}
-	return id, nil
+	return result.Id, nil
 }
 
 func (client *LibvirtplusClient) RemoveContainer(id string) error {

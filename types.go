@@ -36,3 +36,7 @@ type VirtDomInfo struct {
 	CpuTime int64 `json:"cpuTime"`
 	VirtCpu int64 `json:"virtCpu"`
 }
+
+type RespContainersCreate struct {
+	Id string `json:"id"`
+}
